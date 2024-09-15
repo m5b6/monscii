@@ -5,6 +5,7 @@ export interface ASCIIOptions {
   sensitivity?: number;
   fps?: number;
   playbackSpeed?: number;
+  hero?: string;
 }
 
 export interface ASCIIConverter {

@@ -51,7 +51,6 @@ export class Monscii implements ASCIIConverter {
     video.muted = true;
     video.loop = true;
 
-    // Wait for the video metadata to be loaded
     await new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => {
         resolve();

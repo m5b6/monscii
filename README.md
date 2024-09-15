@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/monscii.svg)](https://www.npmjs.com/package/monscii)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Monscii** is a lightweight JavaScript library that converts images and videos into ASCII art directly in the browser. Only dependency is typescript. Contributions are welcome.
+**Monscii**, lightweight library that converts videos and images into ASCII directly in the browser. Only dependency is typescript. Contributions are welcome.
 
 
 ## Usage

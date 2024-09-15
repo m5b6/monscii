@@ -15,17 +15,19 @@
     "build": "tsc"
   },
   "keywords": [
-    "ascii",
+    "video to ascii",
+    "image to ascii",
     "image",
+    "video",
+    "ascii",
     "converter",
     "typescript",
-    "browser",
-    "glyphjs"
+    "browser"
   ],
   "author": "m5b6",
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^4.0.0",
-    "ts-loader": "^9.0.0"
+    "ts-loader": "^9.0.0",
+    "typescript": "^4.0.0"
   }
 }

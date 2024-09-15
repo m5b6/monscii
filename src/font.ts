@@ -38,6 +38,10 @@ export function getSimpleFont(): { [key: string]: string[] } {
 }
 
 export function generateHeroText(text: string, maxWidth: number): string[] {
+  console.log("Generating hero text for:", text);
+  console.log("Generating hero text for:", text);
+  console.log("Generating hero text for:", text);
+  console.log("Generating hero text for:", text);
   const font = getSimpleFont();
   const lines: string[] = [];
 
@@ -54,7 +58,6 @@ export function generateHeroText(text: string, maxWidth: number): string[] {
     }
   }
 
-  // Debugging: Log the generated hero lines
   console.log("Generated hero lines:", lines);
 
   return lines.map((line) => {

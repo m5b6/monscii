@@ -27,7 +27,11 @@
   "author": "m5b6",
   "license": "MIT",
   "devDependencies": {
+    "@types/figlet": "^1.5.8",
     "ts-loader": "^9.0.0",
     "typescript": "^4.0.0"
+  },
+  "dependencies": {
+    "figlet": "^1.7.0"
   }
 }

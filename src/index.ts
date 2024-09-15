@@ -1,9 +1,11 @@
 import { ASCIIOptions, ASCIIConverter } from "./types";
-import { generateHeroText } from "./font";
+import figlet from "figlet";
+
 export class Monscii implements ASCIIConverter {
   private static stylesInjected = false;
   private animationFrameId: number | null = null;
   private lastFrameTime: number = 0;
+  private heroLines: string[] = [];
 
   constructor() {
     if (!Monscii.stylesInjected) {
@@ -29,11 +31,17 @@ export class Monscii implements ASCIIConverter {
       const canvas = this.createCanvas(img.width, img.height, width);
       const imageData = this.getImageDataFromCanvas(canvas, img);
 
-      const asciiElement = this.createASCIIArt(
+      // Generate hero text if provided
+      if (hero) {
+        this.heroLines = await this.generateHeroText(hero, width);
+      } else {
+        this.heroLines = [];
+      }
+
+      const asciiElement = await this.createASCIIArt(
         imageData,
         charSet,
-        sensitivity,
-        hero
+        sensitivity
       );
       targetElement.appendChild(asciiElement);
     } catch (error) {
@@ -83,6 +91,13 @@ export class Monscii implements ASCIIConverter {
       throw new Error("Could not get canvas context");
     }
 
+    // Generate hero text if provided
+    if (hero) {
+      this.heroLines = await this.generateHeroText(hero, width);
+    } else {
+      this.heroLines = [];
+    }
+
     const asciiElement = document.createElement("div");
     asciiElement.className = "monscii-art";
     targetElement.appendChild(asciiElement);
@@ -105,8 +120,7 @@ export class Monscii implements ASCIIConverter {
         const asciiString = this.generateASCIIString(
           imageData,
           charSet,
-          sensitivity,
-          hero
+          sensitivity
         );
         asciiElement.innerHTML = asciiString;
         this.lastFrameTime = currentTime;
@@ -137,8 +151,8 @@ export class Monscii implements ASCIIConverter {
     style.textContent = `
       .monscii-art {
         font-family: monospace;
-        font-size: 7px;
-        line-height: 7px;
+        font-size: 10px;
+        line-height: 10px;
         color: #fff;
         background-color: #000;
         margin: 0;
@@ -200,17 +214,15 @@ export class Monscii implements ASCIIConverter {
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
-  private createASCIIArt(
+  private async createASCIIArt(
     imageData: ImageData,
     charSet: string,
-    sensitivity: number,
-    hero: string
-  ): HTMLElement {
+    sensitivity: number
+  ): Promise<HTMLElement> {
     const asciiString = this.generateASCIIString(
       imageData,
       charSet,
-      sensitivity,
-      hero
+      sensitivity
     );
 
     const asciiElement = document.createElement("div");
@@ -223,19 +235,13 @@ export class Monscii implements ASCIIConverter {
   private generateASCIIString(
     imageData: ImageData,
     charSet: string,
-    sensitivity: number,
-    hero: string
+    sensitivity: number
   ): string {
     const { width, height, data } = imageData;
 
-    let heroLines: string[] = [];
-    if (hero) {
-      heroLines = generateHeroText(hero, width);
-    }
-
     const asciiLines: string[] = [];
 
-    const heroStartY = Math.floor((height - heroLines.length) / 2);
+    const heroStartY = Math.floor((height - this.heroLines.length) / 2);
 
     for (let y = 0; y < height; y++) {
       let line = "";
@@ -243,12 +249,12 @@ export class Monscii implements ASCIIConverter {
         let asciiChar = " ";
 
         if (
-          hero &&
+          this.heroLines.length > 0 &&
           y >= heroStartY &&
-          y < heroStartY + heroLines.length &&
-          x < heroLines[0].length
+          y < heroStartY + this.heroLines.length &&
+          x < this.heroLines[y - heroStartY].length
         ) {
-          const heroChar = heroLines[y - heroStartY][x];
+          const heroChar = this.heroLines[y - heroStartY][x];
           if (heroChar !== " ") {
             asciiChar = heroChar;
           } else {
@@ -314,6 +320,46 @@ export class Monscii implements ASCIIConverter {
   private mapBrightnessToChar(brightness: number, charSet: string): string {
     const charIndex = Math.floor(((charSet.length - 1) * brightness) / 255);
     return charSet.charAt(charIndex);
+  }
+
+  private generateHeroText(text: string, maxWidth: number): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      // Load the desired font if necessary
+      // figlet.loadFont('Standard', (err) => {
+      //   if (err) {
+      //     console.error('Error loading font:', err);
+      //     reject(err);
+      //     return;
+      //   }
+      // });
+
+      figlet.text(
+        text,
+        {
+          font: "Standard",
+          horizontalLayout: "default",
+          verticalLayout: "default",
+        },
+        (err, data) => {
+          if (err) {
+            console.error("Error generating hero text:", err);
+            reject(err);
+            return;
+          }
+          const lines = data!.split("\n");
+
+          const adjustedLines = lines.map((line) => {
+            if (line.length > maxWidth) {
+              return line.substring(0, maxWidth);
+            } else {
+              return line.padEnd(maxWidth, " ");
+            }
+          });
+
+          resolve(adjustedLines);
+        }
+      );
+    });
   }
 }
 

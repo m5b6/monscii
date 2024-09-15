@@ -1,0 +1,28 @@
+{
+  "name": "monscii",
+  "version": "1.0.7",
+  "description": "Convert images to ASCII art in the browser using TypeScript.",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "ascii",
+    "image",
+    "converter",
+    "typescript",
+    "browser",
+    "glyphjs"
+  ],
+  "author": "m5b6",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "ts-loader": "^9.0.0"
+  }
+}

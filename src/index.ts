@@ -3,6 +3,7 @@ import { ASCIIOptions, ASCIIConverter } from "./types";
 export class Monscii implements ASCIIConverter {
   private static stylesInjected = false;
   private animationFrameId: number | null = null;
+  private lastFrameTime: number = 0;
 
   constructor() {
     if (!Monscii.stylesInjected) {
@@ -19,6 +20,7 @@ export class Monscii implements ASCIIConverter {
       width = 100,
       targetElement = document.body,
       charSet = " .,:;i1tfLCG08@",
+      sensitivity = 1,
     } = options;
 
     try {
@@ -26,7 +28,7 @@ export class Monscii implements ASCIIConverter {
       const canvas = this.createCanvas(img.width, img.height, width);
       const imageData = this.getImageDataFromCanvas(canvas, img);
 
-      const asciiElement = this.createASCIIArt(imageData, charSet);
+      const asciiElement = this.createASCIIArt(imageData, charSet, sensitivity);
       targetElement.appendChild(asciiElement);
     } catch (error) {
       console.error("Error converting image to ASCII:", error);
@@ -42,6 +44,9 @@ export class Monscii implements ASCIIConverter {
       width = 100,
       targetElement = document.body,
       charSet = " .,:;i1tfLCG08@",
+      sensitivity = 1,
+      fps = 30,
+      playbackSpeed = 1,
     } = options;
 
     const video = document.createElement("video");
@@ -50,6 +55,7 @@ export class Monscii implements ASCIIConverter {
     video.autoplay = true;
     video.muted = true;
     video.loop = true;
+    video.playbackRate = playbackSpeed;
 
     await new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => {
@@ -74,23 +80,36 @@ export class Monscii implements ASCIIConverter {
     asciiElement.className = "monscii-art";
     targetElement.appendChild(asciiElement);
 
-    const renderFrame = () => {
+    const frameInterval = 1000 / fps;
+
+    const renderFrame = (currentTime: number) => {
       if (video.paused || video.ended) {
         return;
       }
 
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const asciiString = this.generateASCIIString(imageData, charSet);
-      asciiElement.innerHTML = asciiString;
+      if (currentTime - this.lastFrameTime >= frameInterval) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+        const asciiString = this.generateASCIIString(
+          imageData,
+          charSet,
+          sensitivity
+        );
+        asciiElement.innerHTML = asciiString;
+        this.lastFrameTime = currentTime;
+      }
 
       this.animationFrameId = requestAnimationFrame(renderFrame);
     };
 
     video.play();
-    renderFrame();
+    this.animationFrameId = requestAnimationFrame(renderFrame);
 
-    // Handle video pause and end
     video.onpause = () => {
       if (this.animationFrameId) {
         cancelAnimationFrame(this.animationFrameId);
@@ -173,8 +192,16 @@ export class Monscii implements ASCIIConverter {
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
-  private createASCIIArt(imageData: ImageData, charSet: string): HTMLElement {
-    const asciiString = this.generateASCIIString(imageData, charSet);
+  private createASCIIArt(
+    imageData: ImageData,
+    charSet: string,
+    sensitivity: number
+  ): HTMLElement {
+    const asciiString = this.generateASCIIString(
+      imageData,
+      charSet,
+      sensitivity
+    );
 
     const asciiElement = document.createElement("div");
     asciiElement.className = "monscii-art";
@@ -183,7 +210,11 @@ export class Monscii implements ASCIIConverter {
     return asciiElement;
   }
 
-  private generateASCIIString(imageData: ImageData, charSet: string): string {
+  private generateASCIIString(
+    imageData: ImageData,
+    charSet: string,
+    sensitivity: number
+  ): string {
     const { width, height, data } = imageData;
 
     let asciiString = "";
@@ -195,7 +226,10 @@ export class Monscii implements ASCIIConverter {
         const r = data[offset];
         const g = data[offset + 1];
         const b = data[offset + 2];
-        const brightness = this.calculateBrightness(r, g, b);
+        let brightness = this.calculateBrightness(r, g, b);
+
+        brightness = this.adjustBrightness(brightness, sensitivity);
+
         const asciiChar = this.mapBrightnessToChar(brightness, charSet);
         line += asciiChar;
       }
@@ -207,6 +241,13 @@ export class Monscii implements ASCIIConverter {
 
   private calculateBrightness(r: number, g: number, b: number): number {
     return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  private adjustBrightness(brightness: number, sensitivity: number): number {
+    const factor = sensitivity;
+    brightness = (brightness - 128) * factor + 128;
+    brightness = Math.max(0, Math.min(255, brightness));
+    return brightness;
   }
 
   private mapBrightnessToChar(brightness: number, charSet: string): string {

@@ -1,8 +1,10 @@
 export interface ASCIIOptions {
   width?: number;
   targetElement?: HTMLElement;
-  color?: boolean;
   charSet?: string;
+  sensitivity?: number;
+  fps?: number;
+  playbackSpeed?: number;
 }
 
 export interface ASCIIConverter {

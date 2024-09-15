@@ -5,6 +5,9 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": "https://github.com/m5b6/monscii",
+  "homepage": "https://github.com/m5b6/monscii",
+  "bugs": "https://github.com/m5b6/monscii/issues",
   "files": [
     "dist/**/*"
   ],

@@ -6,6 +6,7 @@
 
 **Monscii**, lightweight library that converts videos and images into ASCII directly in the browser. Only dependency is typescript. Contributions are welcome.
 
+**Why?**, to place cool ascii art & video in the web. Inspired by [midjourney's homepage](https://www.midjourney.com/).
 
 ## Usage
 

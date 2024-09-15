@@ -1,5 +1,5 @@
 import { ASCIIOptions, ASCIIConverter } from "./types";
-import getSimpleFont from "./font";
+import { generateHeroText } from "./font";
 export class Monscii implements ASCIIConverter {
   private static stylesInjected = false;
   private animationFrameId: number | null = null;
@@ -228,10 +228,9 @@ export class Monscii implements ASCIIConverter {
   ): string {
     const { width, height, data } = imageData;
 
-    // Generate hero text lines if hero text is provided
     let heroLines: string[] = [];
     if (hero) {
-      heroLines = this.generateHeroText(hero, width);
+      heroLines = generateHeroText(hero, width);
     }
 
     const asciiLines: string[] = [];
@@ -295,7 +294,6 @@ export class Monscii implements ASCIIConverter {
     const b = data[offset + 2];
     let brightness = this.calculateBrightness(r, g, b);
 
-    // Apply sensitivity (contrast adjustment)
     brightness = this.adjustBrightness(brightness, sensitivity);
 
     const asciiChar = this.mapBrightnessToChar(brightness, charSet);
@@ -316,32 +314,6 @@ export class Monscii implements ASCIIConverter {
   private mapBrightnessToChar(brightness: number, charSet: string): string {
     const charIndex = Math.floor(((charSet.length - 1) * brightness) / 255);
     return charSet.charAt(charIndex);
-  }
-
-  private generateHeroText(text: string, maxWidth: number): string[] {
-    const font: { [key: string]: string[] } = getSimpleFont();
-    const lines: string[] = [];
-
-    const fontHeight = Object.values(font)[0].length;
-
-    for (let i = 0; i < fontHeight; i++) {
-      lines[i] = "";
-    }
-
-    for (const char of text.toUpperCase()) {
-      const charLines = font[char] || font[" "];
-      for (let i = 0; i < fontHeight; i++) {
-        lines[i] += charLines[i];
-      }
-    }
-
-    return lines.map((line) => {
-      if (line.length > maxWidth) {
-        return line.substring(0, maxWidth);
-      } else {
-        return line.padEnd(maxWidth, " ");
-      }
-    });
   }
 }
 

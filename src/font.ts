@@ -1,4 +1,4 @@
-export default function getSimpleFont(): { [key: string]: string[] } {
+export function getSimpleFont(): { [key: string]: string[] } {
   const font: { [key: string]: string[] } = {
     A: ["  __  ", " /  \\ ", "/ /\\ \\", "\\ \\_/ /", " \\___/ "],
     B: [" ____ ", "| __ )", "|  _ \\", "| |_) |", "|____/"],
@@ -35,4 +35,33 @@ export default function getSimpleFont(): { [key: string]: string[] } {
     " ": ["  ", "  ", "  ", "  ", "  "],
   };
   return font;
+}
+
+export function generateHeroText(text: string, maxWidth: number): string[] {
+  const font = getSimpleFont();
+  const lines: string[] = [];
+
+  const fontHeight = Object.values(font)[0].length;
+
+  for (let i = 0; i < fontHeight; i++) {
+    lines[i] = "";
+  }
+
+  for (const char of text.toUpperCase()) {
+    const charLines = font[char] || font[" "];
+    for (let i = 0; i < fontHeight; i++) {
+      lines[i] += charLines[i];
+    }
+  }
+
+  // Debugging: Log the generated hero lines
+  console.log("Generated hero lines:", lines);
+
+  return lines.map((line) => {
+    if (line.length > maxWidth) {
+      return line.substring(0, maxWidth);
+    } else {
+      return line.padEnd(maxWidth, " ");
+    }
+  });
 }

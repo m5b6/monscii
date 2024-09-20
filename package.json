@@ -26,11 +26,13 @@
   "author": "m5b6",
   "license": "MIT",
   "dependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.24.8",
     "figlet": "^1.7.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.6",
     "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.4"
+    "@babel/preset-env": "^7.25.4",
+    "babel-plugin-inline-import-data-uri": "^1.0.1"
   }
 }

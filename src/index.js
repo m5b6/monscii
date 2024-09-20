@@ -1,26 +1,22 @@
-import figlet from "figlet";
-import standardFont from "./Standard.flf";
+import { generateHeroText } from "./parseFont.js";
 
-export default class Monscii {
+export class Monscii {
   static stylesInjected = false;
   animationFrameId = null;
   lastFrameTime = 0;
-  heroLines = [];
 
   constructor() {
     if (!Monscii.stylesInjected) {
       this.injectStyles();
       Monscii.stylesInjected = true;
     }
-
-    figlet.parseFont("Standard", standardFont);
   }
 
   async convertImageToASCII(imageSrc, options = {}) {
     const {
       width = 100,
       targetElement = document.body,
-      charSet = " .,:;i1tfLCG08@",
+      charSet = " .,:;i1tfLCG08@ ",
       sensitivity = 1,
       hero = "",
     } = options;
@@ -30,16 +26,11 @@ export default class Monscii {
       const canvas = this.createCanvas(img.width, img.height, width);
       const imageData = this.getImageDataFromCanvas(canvas, img);
 
-      if (hero) {
-        this.heroLines = await this.generateHeroText(hero, width);
-      } else {
-        this.heroLines = [];
-      }
-
       const asciiElement = await this.createASCIIArt(
         imageData,
         charSet,
-        sensitivity
+        sensitivity,
+        hero // Pass hero text
       );
       targetElement.appendChild(asciiElement);
     } catch (error) {
@@ -56,7 +47,7 @@ export default class Monscii {
       sensitivity = 1,
       fps = 30,
       playbackSpeed = 1,
-      hero = "",
+      hero = "", // Added hero option
     } = options;
 
     const video = document.createElement("video");
@@ -86,13 +77,6 @@ export default class Monscii {
       throw new Error("Could not get canvas context");
     }
 
-    if (hero) {
-      console.log("Generating hero text...");
-      this.heroLines = await this.generateHeroText(hero, width);
-    } else {
-      this.heroLines = [];
-    }
-
     const asciiElement = document.createElement("div");
     asciiElement.className = "monscii-art";
     targetElement.appendChild(asciiElement);
@@ -115,7 +99,8 @@ export default class Monscii {
         const asciiString = this.generateASCIIString(
           imageData,
           charSet,
-          sensitivity
+          sensitivity,
+          hero // Pass hero text
         );
         asciiElement.innerHTML = asciiString;
         this.lastFrameTime = currentTime;
@@ -202,11 +187,12 @@ export default class Monscii {
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
-  async createASCIIArt(imageData, charSet, sensitivity) {
+  async createASCIIArt(imageData, charSet, sensitivity, hero) {
     const asciiString = this.generateASCIIString(
       imageData,
       charSet,
-      sensitivity
+      sensitivity,
+      hero
     );
 
     const asciiElement = document.createElement("div");
@@ -216,51 +202,48 @@ export default class Monscii {
     return asciiElement;
   }
 
-  generateASCIIString(imageData, charSet, sensitivity) {
+  generateASCIIString(imageData, charSet, sensitivity, heroText) {
     const { width, height, data } = imageData;
 
     const asciiLines = [];
 
-    const heroStartY = Math.floor((height - this.heroLines.length) / 2);
-
+    // Generate ASCII art from image data
     for (let y = 0; y < height; y++) {
       let line = "";
       for (let x = 0; x < width; x++) {
-        let asciiChar = " ";
-
-        if (
-          this.heroLines.length > 0 &&
-          y >= heroStartY &&
-          y < heroStartY + this.heroLines.length &&
-          x < this.heroLines[y - heroStartY].length
-        ) {
-          const heroChar = this.heroLines[y - heroStartY][x];
-          if (heroChar !== " ") {
-            asciiChar = heroChar;
-          } else {
-            asciiChar = this.getAsciiCharAtPosition(
-              x,
-              y,
-              width,
-              data,
-              charSet,
-              sensitivity
-            );
-          }
-        } else {
-          asciiChar = this.getAsciiCharAtPosition(
-            x,
-            y,
-            width,
-            data,
-            charSet,
-            sensitivity
-          );
-        }
-
+        let asciiChar = this.getAsciiCharAtPosition(
+          x,
+          y,
+          width,
+          data,
+          charSet,
+          sensitivity
+        );
         line += asciiChar;
       }
       asciiLines.push(line);
+    }
+
+    if (heroText) {
+      const heroArt = generateHeroText(heroText);
+      const heroLines = heroArt.split("\n");
+
+      const startY = Math.floor((asciiLines.length - heroLines.length) / 2);
+
+      for (let i = 0; i < heroLines.length; i++) {
+        const asciiIndex = startY + i;
+        if (asciiIndex >= 0 && asciiIndex < asciiLines.length) {
+          const lineLength = asciiLines[asciiIndex].length;
+          const heroLine = heroLines[i];
+          const startX = Math.floor((lineLength - heroLine.length) / 2);
+
+          const updatedLine =
+            asciiLines[asciiIndex].substring(0, startX) +
+            heroLine +
+            asciiLines[asciiIndex].substring(startX + heroLine.length);
+          asciiLines[asciiIndex] = updatedLine;
+        }
+      }
     }
 
     return asciiLines.join("<br>");
@@ -294,33 +277,6 @@ export default class Monscii {
     const charIndex = Math.floor(((charSet.length - 1) * brightness) / 255);
     return charSet.charAt(charIndex);
   }
-
-  generateHeroText(text, maxWidth) {
-    return new Promise((resolve, reject) => {
-      figlet.text(
-        text,
-        {
-          font: "Standard",
-          horizontalLayout: "default",
-          verticalLayout: "default",
-        },
-        (err, data) => {
-          if (err) {
-            console.error("Error generating hero text:", err);
-            reject(err);
-            return;
-          }
-          const lines = data.split("\n");
-          const adjustedLines = lines.map((line) => {
-            if (line.length > maxWidth) {
-              return line.substring(0, maxWidth);
-            } else {
-              return line.padEnd(maxWidth, " ");
-            }
-          });
-          resolve(adjustedLines);
-        }
-      );
-    });
-  }
 }
+
+export { Monscii as default };

@@ -17,10 +17,12 @@ class Monscii {
   }
   async convertImageToASCII(imageSrc, options = {}) {
     const {
-      width = 100,
+      width = 5000,
+      // Increased default width for higher definition
       targetElement = document.body,
-      charSet = " .,:;i1tfLCG08@ ",
-      sensitivity = 1,
+      charSet = "@%#*+=-:. ",
+      // More detailed charset
+      sensitivity = 1.0,
       hero = ""
     } = options;
     try {
@@ -37,10 +39,11 @@ class Monscii {
   }
   async convertVideoToASCII(videoSrc, options = {}) {
     const {
-      width = 100,
+      width = 200,
+      // Increased default width for higher definition
       targetElement = document.body,
-      charSet = " .,:;i1tfLCG08@",
-      sensitivity = 1,
+      charSet = "@%#*+=-:. ",
+      sensitivity = 1.0,
       fps = 30,
       playbackSpeed = 1,
       hero = "" // Added hero option
@@ -102,8 +105,8 @@ class Monscii {
     style.textContent = `
       .monscii-art {
         font-family: monospace;
-        font-size: 10px;
-        line-height: 10px;
+        font-size: 8px; /* Reduced font size for higher density */
+        line-height: 8px;
         color: #fff;
         background-color: #000;
         margin: 0;
@@ -111,6 +114,7 @@ class Monscii {
         user-select: none;
         white-space: pre;
         display: block;
+        letter-spacing: 0px; /* Optional: Adjust for better spacing */
       }
     `;
     document.head.appendChild(style);
@@ -203,7 +207,8 @@ class Monscii {
     return asciiChar;
   }
   calculateBrightness(r, g, b) {
-    return 0.299 * r + 0.587 * g + 0.114 * b;
+    // Using the Rec. 709 standard for luminance
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
   adjustBrightness(brightness, sensitivity) {
     const factor = sensitivity;
@@ -212,8 +217,9 @@ class Monscii {
     return brightness;
   }
   mapBrightnessToChar(brightness, charSet) {
-    const charIndex = Math.floor((charSet.length - 1) * brightness / 255);
-    return charSet.charAt(charIndex);
+    const numChars = charSet.length;
+    const charIndex = Math.floor(brightness / 255 * (numChars - 1));
+    return charSet.charAt(numChars - charIndex - 1); // Reverse for correct mapping
   }
 }
 exports.default = exports.Monscii = Monscii;

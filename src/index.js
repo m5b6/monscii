@@ -14,23 +14,29 @@ export class Monscii {
 
   async convertImageToASCII(imageSrc, options = {}) {
     const {
-      width = 100,
+      width = 200,
       targetElement = document.body,
-      charSet = " .,:;i1tfLCG08@ ",
-      sensitivity = 1,
+      charSet = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjfti;:,`'. ",
+      sensitivity = 1.0,
       hero = "",
+      pixelsPerChar = 1,
     } = options;
 
     try {
       const img = await this.loadImage(imageSrc);
-      const canvas = this.createCanvas(img.width, img.height, width);
+      const canvas = this.createCanvas(
+        img.width,
+        img.height,
+        width * pixelsPerChar
+      );
       const imageData = this.getImageDataFromCanvas(canvas, img);
 
       const asciiElement = await this.createASCIIArt(
         imageData,
         charSet,
         sensitivity,
-        hero // Pass hero text
+        hero,
+        pixelsPerChar
       );
       targetElement.appendChild(asciiElement);
     } catch (error) {
@@ -41,13 +47,14 @@ export class Monscii {
 
   async convertVideoToASCII(videoSrc, options = {}) {
     const {
-      width = 100,
+      width = 200,
       targetElement = document.body,
-      charSet = " .,:;i1tfLCG08@",
-      sensitivity = 1,
+      charSet = "@%#*+=-:. ",
+      sensitivity = 1.0,
       fps = 30,
       playbackSpeed = 1,
-      hero = "", // Added hero option
+      hero = "",
+      pixelsPerChar = 1,
     } = options;
 
     const video = document.createElement("video");
@@ -59,23 +66,17 @@ export class Monscii {
     video.playbackRate = playbackSpeed;
 
     await new Promise((resolve, reject) => {
-      video.onloadedmetadata = () => {
-        resolve();
-      };
-      video.onerror = () => {
-        reject(new Error("Failed to load the video"));
-      };
+      video.onloadedmetadata = resolve;
+      video.onerror = () => reject(new Error("Failed to load the video"));
     });
 
     const canvas = this.createCanvas(
       video.videoWidth,
       video.videoHeight,
-      width
+      width * pixelsPerChar
     );
     const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Could not get canvas context");
-    }
+    if (!context) throw new Error("Could not get canvas context");
 
     const asciiElement = document.createElement("div");
     asciiElement.className = "monscii-art";
@@ -84,9 +85,7 @@ export class Monscii {
     const frameInterval = 1000 / fps;
 
     const renderFrame = (currentTime) => {
-      if (video.paused || video.ended) {
-        return;
-      }
+      if (video.paused || video.ended) return;
 
       if (currentTime - this.lastFrameTime >= frameInterval) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -100,7 +99,8 @@ export class Monscii {
           imageData,
           charSet,
           sensitivity,
-          hero // Pass hero text
+          hero,
+          pixelsPerChar
         );
         asciiElement.innerHTML = asciiString;
         this.lastFrameTime = currentTime;
@@ -113,15 +113,11 @@ export class Monscii {
     this.animationFrameId = requestAnimationFrame(renderFrame);
 
     video.onpause = () => {
-      if (this.animationFrameId) {
-        cancelAnimationFrame(this.animationFrameId);
-      }
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
     };
 
     video.onended = () => {
-      if (this.animationFrameId) {
-        cancelAnimationFrame(this.animationFrameId);
-      }
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
     };
   }
 
@@ -131,8 +127,8 @@ export class Monscii {
     style.textContent = `
       .monscii-art {
         font-family: monospace;
-        font-size: 10px;
-        line-height: 10px;
+        font-size: 5px;
+        line-height: 5px;
         color: #fff;
         background-color: #000;
         margin: 0;
@@ -140,10 +136,13 @@ export class Monscii {
         user-select: none;
         white-space: pre;
         display: block;
+        letter-spacing: 0px;
       }
     `;
     document.head.appendChild(style);
   }
+
+
 
   async loadImage(imageSrc) {
     const img = new Image();
@@ -187,12 +186,13 @@ export class Monscii {
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
-  async createASCIIArt(imageData, charSet, sensitivity, hero) {
+  async createASCIIArt(imageData, charSet, sensitivity, hero, pixelsPerChar) {
     const asciiString = this.generateASCIIString(
       imageData,
       charSet,
       sensitivity,
-      hero
+      hero,
+      pixelsPerChar
     );
 
     const asciiElement = document.createElement("div");
@@ -202,22 +202,31 @@ export class Monscii {
     return asciiElement;
   }
 
-  generateASCIIString(imageData, charSet, sensitivity, heroText) {
+  generateASCIIString(
+    imageData,
+    charSet,
+    sensitivity,
+    heroText,
+    pixelsPerChar
+  ) {
     const { width, height, data } = imageData;
+    const asciiWidth = Math.floor(width / pixelsPerChar);
+    const asciiHeight = Math.floor(height / pixelsPerChar);
 
     const asciiLines = [];
 
-    // Generate ASCII art from image data
-    for (let y = 0; y < height; y++) {
+    for (let y = 0; y < asciiHeight; y++) {
       let line = "";
-      for (let x = 0; x < width; x++) {
-        let asciiChar = this.getAsciiCharAtPosition(
+      for (let x = 0; x < asciiWidth; x++) {
+        let asciiChar = this.getAsciiCharForBlock(
           x,
           y,
           width,
+          height,
           data,
           charSet,
-          sensitivity
+          sensitivity,
+          pixelsPerChar
         );
         line += asciiChar;
       }
@@ -249,21 +258,45 @@ export class Monscii {
     return asciiLines.join("<br>");
   }
 
-  getAsciiCharAtPosition(x, y, width, data, charSet, sensitivity) {
-    const offset = (y * width + x) * 4;
-    const r = data[offset];
-    const g = data[offset + 1];
-    const b = data[offset + 2];
-    let brightness = this.calculateBrightness(r, g, b);
+  getAsciiCharForBlock(
+    blockX,
+    blockY,
+    width,
+    height,
+    data,
+    charSet,
+    sensitivity,
+    pixelsPerChar
+  ) {
+    let totalBrightness = 0;
+    const pixelCount = pixelsPerChar * pixelsPerChar;
 
-    brightness = this.adjustBrightness(brightness, sensitivity);
+    for (let y = 0; y < pixelsPerChar; y++) {
+      for (let x = 0; x < pixelsPerChar; x++) {
+        const pixelX = blockX * pixelsPerChar + x;
+        const pixelY = blockY * pixelsPerChar + y;
 
-    const asciiChar = this.mapBrightnessToChar(brightness, charSet);
-    return asciiChar;
+        if (pixelX < width && pixelY < height) {
+          const offset = (pixelY * width + pixelX) * 4;
+          const r = data[offset];
+          const g = data[offset + 1];
+          const b = data[offset + 2];
+          totalBrightness += this.calculateBrightness(r, g, b);
+        }
+      }
+    }
+
+    const averageBrightness = totalBrightness / pixelCount;
+    const adjustedBrightness = this.adjustBrightness(
+      averageBrightness,
+      sensitivity
+    );
+    return this.mapBrightnessToChar(adjustedBrightness, charSet);
   }
 
   calculateBrightness(r, g, b) {
-    return 0.299 * r + 0.587 * g + 0.114 * b;
+    // Using the Rec. 709 standard for luminance
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 
   adjustBrightness(brightness, sensitivity) {
@@ -274,8 +307,9 @@ export class Monscii {
   }
 
   mapBrightnessToChar(brightness, charSet) {
-    const charIndex = Math.floor(((charSet.length - 1) * brightness) / 255);
-    return charSet.charAt(charIndex);
+    const numChars = charSet.length;
+    const charIndex = Math.floor((brightness / 255) * (numChars - 1));
+    return charSet.charAt(numChars - charIndex - 1); // Reverse for correct mapping
   }
 }
 

@@ -2,9 +2,8 @@
   "name": "monscii",
   "version": "1.0.17",
   "description": "Convert images to ASCII art in the browser using TypeScript.",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "dist/monscii.js",
   "repository": "https://github.com/m5b6/monscii",
   "homepage": "https://github.com/m5b6/monscii",
   "bugs": "https://github.com/m5b6/monscii/issues",
@@ -12,7 +11,7 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "babel src -d dist"
   },
   "keywords": [
     "video to ascii",
@@ -26,12 +25,12 @@
   ],
   "author": "m5b6",
   "license": "MIT",
-  "devDependencies": {
-    "@types/figlet": "^1.5.8",
-    "ts-loader": "^9.0.0",
-    "typescript": "^4.0.0"
-  },
   "dependencies": {
     "figlet": "^1.7.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.25.6",
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4"
   }
 }

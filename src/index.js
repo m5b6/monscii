@@ -1,23 +1,22 @@
-import { ASCIIOptions, ASCIIConverter } from "./types";
 import figlet from "figlet";
+import standardFont from "./Standard.flf";
 
-export class Monscii implements ASCIIConverter {
-  private static stylesInjected = false;
-  private animationFrameId: number | null = null;
-  private lastFrameTime: number = 0;
-  private heroLines: string[] = [];
+export default class Monscii {
+  static stylesInjected = false;
+  animationFrameId = null;
+  lastFrameTime = 0;
+  heroLines = [];
 
   constructor() {
     if (!Monscii.stylesInjected) {
       this.injectStyles();
       Monscii.stylesInjected = true;
     }
+
+    figlet.parseFont("Standard", standardFont);
   }
 
-  async convertImageToASCII(
-    imageSrc: string | File,
-    options: ASCIIOptions = {}
-  ): Promise<void> {
+  async convertImageToASCII(imageSrc, options = {}) {
     const {
       width = 100,
       targetElement = document.body,
@@ -31,7 +30,6 @@ export class Monscii implements ASCIIConverter {
       const canvas = this.createCanvas(img.width, img.height, width);
       const imageData = this.getImageDataFromCanvas(canvas, img);
 
-      // Generate hero text if provided
       if (hero) {
         this.heroLines = await this.generateHeroText(hero, width);
       } else {
@@ -50,10 +48,7 @@ export class Monscii implements ASCIIConverter {
     }
   }
 
-  async convertVideoToASCII(
-    videoSrc: string,
-    options: ASCIIOptions = {}
-  ): Promise<void> {
+  async convertVideoToASCII(videoSrc, options = {}) {
     const {
       width = 100,
       targetElement = document.body,
@@ -72,7 +67,7 @@ export class Monscii implements ASCIIConverter {
     video.loop = true;
     video.playbackRate = playbackSpeed;
 
-    await new Promise<void>((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       video.onloadedmetadata = () => {
         resolve();
       };
@@ -91,8 +86,8 @@ export class Monscii implements ASCIIConverter {
       throw new Error("Could not get canvas context");
     }
 
-    // Generate hero text if provided
     if (hero) {
+      console.log("Generating hero text...");
       this.heroLines = await this.generateHeroText(hero, width);
     } else {
       this.heroLines = [];
@@ -104,7 +99,7 @@ export class Monscii implements ASCIIConverter {
 
     const frameInterval = 1000 / fps;
 
-    const renderFrame = (currentTime: number) => {
+    const renderFrame = (currentTime) => {
       if (video.paused || video.ended) {
         return;
       }
@@ -145,7 +140,7 @@ export class Monscii implements ASCIIConverter {
     };
   }
 
-  private injectStyles(): void {
+  injectStyles() {
     const style = document.createElement("style");
     style.id = "monscii-styles";
     style.textContent = `
@@ -165,7 +160,7 @@ export class Monscii implements ASCIIConverter {
     document.head.appendChild(style);
   }
 
-  private async loadImage(imageSrc: string | File): Promise<HTMLImageElement> {
+  async loadImage(imageSrc) {
     const img = new Image();
     img.crossOrigin = "Anonymous";
 
@@ -175,26 +170,22 @@ export class Monscii implements ASCIIConverter {
       img.src = imageSrc;
     }
 
-    return new Promise<HTMLImageElement>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("Failed to load the image"));
     });
   }
 
-  private readFileAsDataURL(file: File): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
+  readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(new Error("Failed to read the file"));
       reader.readAsDataURL(file);
     });
   }
 
-  private createCanvas(
-    originalWidth: number,
-    originalHeight: number,
-    targetWidth: number
-  ): HTMLCanvasElement {
+  createCanvas(originalWidth, originalHeight, targetWidth) {
     const canvas = document.createElement("canvas");
     const aspectRatio = originalHeight / originalWidth;
     canvas.width = targetWidth;
@@ -202,10 +193,7 @@ export class Monscii implements ASCIIConverter {
     return canvas;
   }
 
-  private getImageDataFromCanvas(
-    canvas: HTMLCanvasElement,
-    image: HTMLImageElement
-  ): ImageData {
+  getImageDataFromCanvas(canvas, image) {
     const context = canvas.getContext("2d");
     if (!context) {
       throw new Error("Could not get canvas context");
@@ -214,11 +202,7 @@ export class Monscii implements ASCIIConverter {
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
-  private async createASCIIArt(
-    imageData: ImageData,
-    charSet: string,
-    sensitivity: number
-  ): Promise<HTMLElement> {
+  async createASCIIArt(imageData, charSet, sensitivity) {
     const asciiString = this.generateASCIIString(
       imageData,
       charSet,
@@ -232,14 +216,10 @@ export class Monscii implements ASCIIConverter {
     return asciiElement;
   }
 
-  private generateASCIIString(
-    imageData: ImageData,
-    charSet: string,
-    sensitivity: number
-  ): string {
+  generateASCIIString(imageData, charSet, sensitivity) {
     const { width, height, data } = imageData;
 
-    const asciiLines: string[] = [];
+    const asciiLines = [];
 
     const heroStartY = Math.floor((height - this.heroLines.length) / 2);
 
@@ -286,14 +266,7 @@ export class Monscii implements ASCIIConverter {
     return asciiLines.join("<br>");
   }
 
-  private getAsciiCharAtPosition(
-    x: number,
-    y: number,
-    width: number,
-    data: Uint8ClampedArray,
-    charSet: string,
-    sensitivity: number
-  ): string {
+  getAsciiCharAtPosition(x, y, width, data, charSet, sensitivity) {
     const offset = (y * width + x) * 4;
     const r = data[offset];
     const g = data[offset + 1];
@@ -306,33 +279,24 @@ export class Monscii implements ASCIIConverter {
     return asciiChar;
   }
 
-  private calculateBrightness(r: number, g: number, b: number): number {
+  calculateBrightness(r, g, b) {
     return 0.299 * r + 0.587 * g + 0.114 * b;
   }
 
-  private adjustBrightness(brightness: number, sensitivity: number): number {
+  adjustBrightness(brightness, sensitivity) {
     const factor = sensitivity;
     brightness = (brightness - 128) * factor + 128;
     brightness = Math.max(0, Math.min(255, brightness));
     return brightness;
   }
 
-  private mapBrightnessToChar(brightness: number, charSet: string): string {
+  mapBrightnessToChar(brightness, charSet) {
     const charIndex = Math.floor(((charSet.length - 1) * brightness) / 255);
     return charSet.charAt(charIndex);
   }
 
-  private generateHeroText(text: string, maxWidth: number): Promise<string[]> {
+  generateHeroText(text, maxWidth) {
     return new Promise((resolve, reject) => {
-      // Load the desired font if necessary
-      // figlet.loadFont('Standard', (err) => {
-      //   if (err) {
-      //     console.error('Error loading font:', err);
-      //     reject(err);
-      //     return;
-      //   }
-      // });
-
       figlet.text(
         text,
         {
@@ -346,8 +310,7 @@ export class Monscii implements ASCIIConverter {
             reject(err);
             return;
           }
-          const lines = data!.split("\n");
-
+          const lines = data.split("\n");
           const adjustedLines = lines.map((line) => {
             if (line.length > maxWidth) {
               return line.substring(0, maxWidth);
@@ -355,12 +318,9 @@ export class Monscii implements ASCIIConverter {
               return line.padEnd(maxWidth, " ");
             }
           });
-
           resolve(adjustedLines);
         }
       );
     });
   }
 }
-
-export default Monscii;

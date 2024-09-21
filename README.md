@@ -3,8 +3,9 @@
 
 [![npm version](https://img.shields.io/npm/v/monscii.svg)](https://www.npmjs.com/package/monscii)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm downloads](https://img.shields.io/npm/dm/monscii)](https://www.npmjs.com/package/monscii)
 
-<!-- VIDEO  --> 
+
 <img src="./monscii.mp4" width="500">
 
 **Monscii** lets media speak. lightweight library that converts videos and images into ASCII in the web.

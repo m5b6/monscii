@@ -17,21 +17,35 @@ class Monscii {
   }
   async convertImageToASCII(imageSrc, options = {}) {
     const {
-      width = 5000,
-      // Increased default width for higher definition
+      width = 100,
       targetElement = document.body,
-      charSet = "@%#*+=-:. ",
-      // More detailed charset
+      charSet = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjfti;:,`'. ",
       sensitivity = 1.0,
-      hero = ""
+      hero = "",
+      pixelsPerChar = 1,
+      color = true // Add color option, default is true
     } = options;
     try {
       const img = await this.loadImage(imageSrc);
-      const canvas = this.createCanvas(img.width, img.height, width);
+      const canvas = this.createCanvas(img.width, img.height, width * pixelsPerChar);
       const imageData = this.getImageDataFromCanvas(canvas, img);
-      const asciiElement = await this.createASCIIArt(imageData, charSet, sensitivity, hero // Pass hero text
-      );
-      targetElement.appendChild(asciiElement);
+
+      // Create a container to hold both ASCII art and hero text
+      const container = document.createElement("div");
+      container.style.position = "relative";
+      container.style.display = "inline-block";
+      let asciiElement;
+      if (color) {
+        asciiElement = await this.createColorASCIIArt(imageData, charSet, sensitivity, pixelsPerChar);
+      } else {
+        asciiElement = await this.createASCIIArt(imageData, charSet, sensitivity, pixelsPerChar);
+      }
+      container.appendChild(asciiElement);
+      if (hero) {
+        const heroElement = this.createHeroElement(hero, canvas.width, canvas.height);
+        container.appendChild(heroElement);
+      }
+      targetElement.appendChild(container);
     } catch (error) {
       console.error("Error converting image to ASCII:", error);
       throw error;
@@ -39,14 +53,15 @@ class Monscii {
   }
   async convertVideoToASCII(videoSrc, options = {}) {
     const {
-      width = 200,
-      // Increased default width for higher definition
+      width = 50,
       targetElement = document.body,
       charSet = "@%#*+=-:. ",
       sensitivity = 1.0,
       fps = 30,
       playbackSpeed = 1,
-      hero = "" // Added hero option
+      hero = "",
+      pixelsPerChar = 1,
+      color = true // Add color option, default is true
     } = options;
     const video = document.createElement("video");
     video.src = videoSrc;
@@ -56,65 +71,126 @@ class Monscii {
     video.loop = true;
     video.playbackRate = playbackSpeed;
     await new Promise((resolve, reject) => {
-      video.onloadedmetadata = () => {
-        resolve();
-      };
-      video.onerror = () => {
-        reject(new Error("Failed to load the video"));
-      };
+      video.onloadedmetadata = resolve;
+      video.onerror = () => reject(new Error("Failed to load the video"));
     });
-    const canvas = this.createCanvas(video.videoWidth, video.videoHeight, width);
+    const canvas = this.createCanvas(video.videoWidth, video.videoHeight, width * pixelsPerChar);
     const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Could not get canvas context");
-    }
-    const asciiElement = document.createElement("div");
-    asciiElement.className = "monscii-art";
-    targetElement.appendChild(asciiElement);
-    const frameInterval = 1000 / fps;
-    const renderFrame = currentTime => {
-      if (video.paused || video.ended) {
-        return;
+    if (!context) throw new Error("Could not get canvas context");
+
+    // Create a container to hold both ASCII art and hero text
+    const container = document.createElement("div");
+    container.style.position = "relative";
+    container.style.display = "inline-block";
+    if (color) {
+      // Use canvas for colored ASCII art
+      const asciiCanvas = document.createElement("canvas");
+      const asciiWidth = Math.floor(canvas.width / pixelsPerChar);
+      const asciiHeight = Math.floor(canvas.height / pixelsPerChar);
+      const charWidth = 6;
+      const charHeight = 12;
+      asciiCanvas.width = asciiWidth * charWidth;
+      asciiCanvas.height = asciiHeight * charHeight;
+      asciiCanvas.className = "monscii-art";
+      const asciiContext = asciiCanvas.getContext("2d");
+      asciiContext.font = `${charHeight}px monospace`;
+      asciiContext.textAlign = "left";
+      asciiContext.textBaseline = "top";
+      container.appendChild(asciiCanvas);
+      if (hero) {
+        const heroElement = this.createHeroElement(hero, asciiCanvas.width, asciiCanvas.height);
+        container.appendChild(heroElement);
       }
-      if (currentTime - this.lastFrameTime >= frameInterval) {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const asciiString = this.generateASCIIString(imageData, charSet, sensitivity, hero // Pass hero text
-        );
-        asciiElement.innerHTML = asciiString;
-        this.lastFrameTime = currentTime;
-      }
+      targetElement.appendChild(container);
+      const frameInterval = 1000 / fps;
+      const renderFrame = currentTime => {
+        if (video.paused || video.ended) {
+          return;
+        }
+        if (currentTime - this.lastFrameTime >= frameInterval) {
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          asciiContext.clearRect(0, 0, asciiCanvas.width, asciiCanvas.height);
+          this.generateASCIIArtOnCanvas(imageData, asciiContext, charSet, sensitivity, pixelsPerChar);
+          this.lastFrameTime = currentTime;
+        }
+        this.animationFrameId = requestAnimationFrame(renderFrame);
+      };
+      video.play();
       this.animationFrameId = requestAnimationFrame(renderFrame);
-    };
-    video.play();
-    this.animationFrameId = requestAnimationFrame(renderFrame);
-    video.onpause = () => {
-      if (this.animationFrameId) {
-        cancelAnimationFrame(this.animationFrameId);
+      video.onpause = () => {
+        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      };
+      video.onended = () => {
+        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      };
+    } else {
+      // Use plain text elements for black and white ASCII art
+      const asciiElement = document.createElement("div");
+      asciiElement.className = "monscii-art";
+      asciiElement.style.fontFamily = "monospace";
+      asciiElement.style.whiteSpace = "pre";
+      asciiElement.style.lineHeight = "6px";
+      asciiElement.style.fontSize = "6px";
+      asciiElement.style.color = "#fff";
+      asciiElement.style.backgroundColor = "black";
+      container.appendChild(asciiElement);
+      if (hero) {
+        const heroElement = this.createHeroElement(hero, canvas.width, canvas.height);
+        container.appendChild(heroElement);
       }
-    };
-    video.onended = () => {
-      if (this.animationFrameId) {
-        cancelAnimationFrame(this.animationFrameId);
-      }
-    };
+      targetElement.appendChild(container);
+      const frameInterval = 1000 / fps;
+      const renderFrame = currentTime => {
+        if (video.paused || video.ended) {
+          return;
+        }
+        if (currentTime - this.lastFrameTime >= frameInterval) {
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const asciiString = this.generateASCIIString(imageData, charSet, sensitivity, "",
+          // Hero text is handled separately
+          pixelsPerChar);
+          asciiElement.textContent = asciiString;
+          this.lastFrameTime = currentTime;
+        }
+        this.animationFrameId = requestAnimationFrame(renderFrame);
+      };
+      video.play();
+      this.animationFrameId = requestAnimationFrame(renderFrame);
+      video.onpause = () => {
+        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      };
+      video.onended = () => {
+        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      };
+    }
   }
   injectStyles() {
     const style = document.createElement("style");
     style.id = "monscii-styles";
     style.textContent = `
       .monscii-art {
-        font-family: monospace;
-        font-size: 8px; /* Reduced font size for higher density */
-        line-height: 8px;
-        color: #fff;
-        background-color: #000;
+        background-color: transparent;
         margin: 0;
         padding: 0;
         user-select: none;
-        white-space: pre;
         display: block;
-        letter-spacing: 0px; /* Optional: Adjust for better spacing */
+        font-family: monospace;
+        white-space: pre;
+        line-height: 6px;
+        font-size: 6px;
+      }
+      .monscii-hero {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        font-weight: 900;
+        transform: translate(-50%, -50%);
+        font-family: monospace;
+        backdrop-filter: blur(1px); 
+        white-space: pre;
+        pointer-events: none;
       }
     `;
     document.head.appendChild(style);
@@ -155,60 +231,142 @@ class Monscii {
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
-  async createASCIIArt(imageData, charSet, sensitivity, hero) {
-    const asciiString = this.generateASCIIString(imageData, charSet, sensitivity, hero);
+  async createASCIIArt(imageData, charSet, sensitivity, pixelsPerChar) {
+    const asciiString = this.generateASCIIString(imageData, charSet, sensitivity, "",
+    // Hero text is handled separately
+    pixelsPerChar);
     const asciiElement = document.createElement("div");
     asciiElement.className = "monscii-art";
-    asciiElement.innerHTML = asciiString;
+    asciiElement.textContent = asciiString; // Use textContent to preserve formatting
+
     return asciiElement;
   }
-  generateASCIIString(imageData, charSet, sensitivity, heroText) {
+  async createColorASCIIArt(imageData, charSet, sensitivity, pixelsPerChar) {
+    const {
+      width,
+      height
+    } = imageData;
+    const asciiWidth = Math.floor(width / pixelsPerChar);
+    const asciiHeight = Math.floor(height / pixelsPerChar);
+    const charWidth = 6; // Adjust based on desired character size
+    const charHeight = 12; // Adjust based on desired character size
+
+    const asciiCanvas = document.createElement("canvas");
+    asciiCanvas.width = asciiWidth * charWidth;
+    asciiCanvas.height = asciiHeight * charHeight;
+    asciiCanvas.className = "monscii-art";
+    const context = asciiCanvas.getContext("2d");
+    context.font = `${charHeight}px monospace`;
+    context.textAlign = "left";
+    context.textBaseline = "top";
+    this.generateASCIIArtOnCanvas(imageData, context, charSet, sensitivity, pixelsPerChar);
+    return asciiCanvas;
+  }
+  generateASCIIArtOnCanvas(imageData, context, charSet, sensitivity, pixelsPerChar) {
     const {
       width,
       height,
       data
     } = imageData;
+    const asciiWidth = Math.floor(width / pixelsPerChar);
+    const asciiHeight = Math.floor(height / pixelsPerChar);
+    const charWidth = 6;
+    const charHeight = 12;
+    for (let y = 0; y < asciiHeight; y++) {
+      for (let x = 0; x < asciiWidth; x++) {
+        const {
+          asciiChar,
+          color
+        } = this.getAsciiCharAndColorForBlock(x, y, width, height, data, charSet, sensitivity, pixelsPerChar);
+        context.fillStyle = color;
+        context.fillText(asciiChar, x * charWidth, y * charHeight);
+      }
+    }
+  }
+  generateASCIIString(imageData, charSet, sensitivity, heroText, pixelsPerChar) {
+    const {
+      width,
+      height,
+      data
+    } = imageData;
+    const asciiWidth = Math.floor(width / pixelsPerChar);
+    const asciiHeight = Math.floor(height / pixelsPerChar);
     const asciiLines = [];
-
-    // Generate ASCII art from image data
-    for (let y = 0; y < height; y++) {
+    for (let y = 0; y < asciiHeight; y++) {
       let line = "";
-      for (let x = 0; x < width; x++) {
-        let asciiChar = this.getAsciiCharAtPosition(x, y, width, data, charSet, sensitivity);
+      for (let x = 0; x < asciiWidth; x++) {
+        let asciiChar = this.getAsciiCharForBlock(x, y, width, height, data, charSet, sensitivity, pixelsPerChar);
         line += asciiChar;
       }
       asciiLines.push(line);
     }
-    if (heroText) {
-      const heroArt = (0, _parseFont.generateHeroText)(heroText);
-      const heroLines = heroArt.split("\n");
-      const startY = Math.floor((asciiLines.length - heroLines.length) / 2);
-      for (let i = 0; i < heroLines.length; i++) {
-        const asciiIndex = startY + i;
-        if (asciiIndex >= 0 && asciiIndex < asciiLines.length) {
-          const lineLength = asciiLines[asciiIndex].length;
-          const heroLine = heroLines[i];
-          const startX = Math.floor((lineLength - heroLine.length) / 2);
-          const updatedLine = asciiLines[asciiIndex].substring(0, startX) + heroLine + asciiLines[asciiIndex].substring(startX + heroLine.length);
-          asciiLines[asciiIndex] = updatedLine;
+
+    // Hero text is handled separately
+    return asciiLines.join("\n");
+  }
+  createHeroElement(heroText, containerWidth, containerHeight) {
+    const heroElement = document.createElement("div");
+    heroElement.className = "monscii-hero";
+    heroElement.textContent = (0, _parseFont.generateHeroText)(heroText);
+    return heroElement;
+  }
+  getAsciiCharForBlock(blockX, blockY, width, height, data, charSet, sensitivity, pixelsPerChar) {
+    let totalBrightness = 0;
+    const pixelCount = pixelsPerChar * pixelsPerChar;
+    for (let y = 0; y < pixelsPerChar; y++) {
+      for (let x = 0; x < pixelsPerChar; x++) {
+        const pixelX = blockX * pixelsPerChar + x;
+        const pixelY = blockY * pixelsPerChar + y;
+        if (pixelX < width && pixelY < height) {
+          const offset = (pixelY * width + pixelX) * 4;
+          const r = data[offset];
+          const g = data[offset + 1];
+          const b = data[offset + 2];
+          totalBrightness += this.calculateBrightness(r, g, b);
         }
       }
     }
-    return asciiLines.join("<br>");
+    const averageBrightness = totalBrightness / pixelCount;
+    const adjustedBrightness = this.adjustBrightness(averageBrightness, sensitivity);
+    return this.mapBrightnessToChar(adjustedBrightness, charSet);
   }
-  getAsciiCharAtPosition(x, y, width, data, charSet, sensitivity) {
-    const offset = (y * width + x) * 4;
-    const r = data[offset];
-    const g = data[offset + 1];
-    const b = data[offset + 2];
-    let brightness = this.calculateBrightness(r, g, b);
-    brightness = this.adjustBrightness(brightness, sensitivity);
-    const asciiChar = this.mapBrightnessToChar(brightness, charSet);
-    return asciiChar;
+  getAsciiCharAndColorForBlock(blockX, blockY, width, height, data, charSet, sensitivity, pixelsPerChar) {
+    let totalBrightness = 0;
+    let totalR = 0;
+    let totalG = 0;
+    let totalB = 0;
+    const pixelCount = pixelsPerChar * pixelsPerChar;
+    for (let y = 0; y < pixelsPerChar; y++) {
+      for (let x = 0; x < pixelsPerChar; x++) {
+        const pixelX = blockX * pixelsPerChar + x;
+        const pixelY = blockY * pixelsPerChar + y;
+        if (pixelX < width && pixelY < height) {
+          const offset = (pixelY * width + pixelX) * 4;
+          const r = data[offset];
+          const g = data[offset + 1];
+          const b = data[offset + 2];
+          totalBrightness += this.calculateBrightness(r, g, b);
+          totalR += r;
+          totalG += g;
+          totalB += b;
+        }
+      }
+    }
+    const averageBrightness = totalBrightness / pixelCount;
+    const adjustedBrightness = this.adjustBrightness(averageBrightness, sensitivity);
+    const asciiChar = this.mapBrightnessToChar(adjustedBrightness, charSet);
+    const avgR = Math.round(totalR / pixelCount);
+    const avgG = Math.round(totalG / pixelCount);
+    const avgB = Math.round(totalB / pixelCount);
+    const color = `rgb(${avgR}, ${avgG}, ${avgB})`;
+    return {
+      asciiChar,
+      color
+    };
   }
   calculateBrightness(r, g, b) {
     // Using the Rec. 709 standard for luminance
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return 0.2126 * r + 0.8152 * g + 0.0722 * b;
   }
   adjustBrightness(brightness, sensitivity) {
     const factor = sensitivity;

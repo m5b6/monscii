@@ -8,6 +8,7 @@
 
 [![monscii video](https://github.com/user-attachments/assets/af311ec9-26fa-4238-9869-59a6636bdfa4)](https://github.com/user-attachments/assets/af311ec9-26fa-4238-9869-59a6636bdfa4)
 
+<video src="https://github.com/user-attachments/assets/af311ec9-26fa-4238-9869-59a6636bdfa4" width="300"/>
 
 **Monscii** lets media speak. lightweight library that converts videos and images into ASCII in the web.
 

@@ -4,112 +4,50 @@
 [![npm version](https://img.shields.io/npm/v/monscii.svg)](https://www.npmjs.com/package/monscii)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Monscii**, lightweight library that converts videos and images into ASCII directly in the browser. Only dependency is typescript. Contributions are welcome.
+**Monscii** lets media speak. lightweight library that converts videos and images into ASCII in the web.
 
-**Why?**, to place cool ascii art & video in the web. Inspired by [midjourney's homepage](https://www.midjourney.com/).
+**Why?**, to place cool art in the web. Inspired by [midjourney's homepage](https://www.midjourney.com/).
+
+
+## Installation
+
+```
+npm install monscii
+```
+
+*or just include the script from [unpkg](https://unpkg.com/monscii/dist/monscii.umd.js)*
+
 
 ## Usage
 
-**Image to ascii:**
+```javascript
 
-    import Monscii from 'monscii';
+const monscii = new Monscii();
 
-    const converter = new Monscii();
-    const imageSrc = 'path/to/your/image.jpg';
-    const targetElement = document.getElementById('ascii-art');
+// For videos
+monscii.convertVideoToASCII("video.mp4", {
+  width: 250,
+  targetElement: document.getElementById("art"),
+  sensitivity: 0.5,
+  color: true,
+  hero: "Dream in color - Regina Belle",
+});
 
-    converter.convertImageToASCII(imageSrc, {
-      width: 100,
-      targetElement,
-      charSet: ' .,:;i1tfLCG08@',
-    }).catch(error => {
-      console.error('Error converting image to ASCII:', error);
-    });
+// For images
+monscii.convertImageToASCII("image.jpg", {
+  width: 100,
+  color: false
+});
+```
 
-
-**Video to ascii:**
-
-    import Monscii from 'monscii';
-
-    const converter = new Monscii();
-    const videoSrc = 'path/to/your/video.mp4';
-    const targetElement = document.getElementById('ascii-video');
-
-    converter.convertVideoToASCII(videoSrc, {
-      width: 80,
-      targetElement,
-      charSet: ' .,:;i1tfLCG08@',
-    }).catch(error => {
-      console.error('Error converting video to ASCII:', error);
-    });
 
 ## Options
 
-Both `convertImageToASCII` and `convertVideoToASCII` methods accept an `options` object with the following properties:
-
-- **`width`** (`number`): The width of the ASCII art in characters. Defaults to `100`.
-- **`targetElement`** (`HTMLElement`): The DOM element where the ASCII art will be rendered. Defaults to `document.body`.
-- **`charSet`** (`string`): A string of characters used for ASCII mapping. Characters are mapped from darkest to lightest. Defaults to `' .,:;i1tfLCG08@'`.
-
-## API Reference
-
-### Monscii Class
-
-#### **convertImageToASCII**
-
-Converts an image to ASCII art and appends it to the specified target element.
-
-**Syntax:**
-
-    convertImageToASCII(
-      imageSrc: string | File,
-      options?: ASCIIOptions
-    ): Promise<void>
-
-**Parameters:**
-
-- `imageSrc`: The source of the image. Can be a URL or a `File` object.
-- `options`: An optional object containing conversion options.
-
-**Returns:**
-
-- A `Promise` that resolves when the conversion is complete.
-
-**Example:**
-
-    converter.convertImageToASCII('image.jpg', {
-      width: 120,
-      targetElement: document.getElementById('ascii-art'),
-    });
-
-#### **convertVideoToASCII**
-
-Converts a video to ASCII art and streams it in real-time to the specified target element.
-
-**Syntax:**
-
-    convertVideoToASCII(
-      videoSrc: string,
-      options?: ASCIIOptions
-    ): Promise<void>
-
-**Parameters:**
-
-- `videoSrc`: The source of the video as a URL.
-- `options`: An optional object containing conversion options.
-
-**Returns:**
-
-- A `Promise` that resolves when the video starts playing.
-
-**Example:**
-
-    converter.convertVideoToASCII('video.mp4', {
-      width: 80,
-      targetElement: document.getElementById('ascii-video'),
-    });
-
-
-
-
+- `width`: Output width (default: 100)
+- `targetElement`: DOM element to append output (default: document.body)
+- `sensitivity`: Brightness sensitivity (default: 1.0)
+- `color`: Enable color output (default: true). Disable for *much faster* black and white rendering.
+- `hero`: Overlay text (optional)
+- `fps`: Frames per second for video (default: 30)
+- `playbackSpeed`: Video playback speed (default: 1)
 

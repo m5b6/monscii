@@ -4,6 +4,9 @@
 [![npm version](https://img.shields.io/npm/v/monscii.svg)](https://www.npmjs.com/package/monscii)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<!-- VIDEO  --> 
+<img src="./monscii.mp4" width="500">
+
 **Monscii** lets media speak. lightweight library that converts videos and images into ASCII in the web.
 
 **Why?**, to place cool art in the web. Inspired by [midjourney's homepage](https://www.midjourney.com/).
@@ -31,6 +34,7 @@ monscii.convertVideoToASCII("video.mp4", {
   sensitivity: 0.5,
   color: true,
   hero: "Dream in color - Regina Belle",
+  charSet: "%#*+=-:.
 });
 
 // For images
@@ -50,4 +54,4 @@ monscii.convertImageToASCII("image.jpg", {
 - `hero`: Overlay text (optional)
 - `fps`: Frames per second for video (default: 30)
 - `playbackSpeed`: Video playback speed (default: 1)
-
+- `charSet`: Character set (Not required)

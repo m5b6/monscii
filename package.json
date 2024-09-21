@@ -1,6 +1,6 @@
 {
   "name": "monscii",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Convert images to ASCII art in the browser using TypeScript.",
   "type": "module",
   "main": "dist/monscii.cjs.js",

@@ -1,6 +1,6 @@
 import { generateHeroText } from "./parseFont.js";
 
-export class Monscii {
+class Monscii {
   static stylesInjected = false;
   animationFrameId = null;
   lastFrameTime = 0;
@@ -32,7 +32,6 @@ export class Monscii {
       );
       const imageData = this.getImageDataFromCanvas(canvas, img);
 
-      // Create a container to hold both ASCII art and hero text
       const container = document.createElement("div");
       container.style.position = "relative";
       container.style.display = "inline-block";
@@ -539,4 +538,4 @@ export class Monscii {
   }
 }
 
-export { Monscii as default };
+export default Monscii;
